@@ -12,7 +12,7 @@ class Plugin:
     """Security Camera Channel Plugin"""
     
     name = "Security Camera"
-    version = "1.0.0"
+    version = "1.1.0"
     description = "Add security camera feeds (RTSP/HTTP/MJPEG) as channels"
     author = "Community Plugin"
     
@@ -36,10 +36,10 @@ class Plugin:
         {
             "id": "channel_number",
             "label": "Channel Number",
-            "type": "number",
+            "type": "string",
             "required": True,
-            "default": 999,
-            "help": "Channel number (e.g., 999)"
+            "default": "999",
+            "help": "Channel number (e.g., 1, 1.1, 999)"
         },
         {
             "id": "channel_group",
@@ -118,7 +118,7 @@ class Plugin:
         
         camera_url = settings.get("camera_url", "").strip()
         camera_name = settings.get("camera_name", "Security Camera").strip()
-        channel_number = int(settings.get("channel_number", 999))
+        channel_number = settings.get("channel_number", "999").strip()
         channel_group_name = settings.get("channel_group", "Security Cameras").strip()
         logo_url = settings.get("logo_url", "").strip()
         
@@ -127,6 +127,16 @@ class Plugin:
         
         if not camera_name:
             return {"success": False, "message": "❌ Camera name is required"}
+        
+        if not channel_number:
+            return {"success": False, "message": "❌ Channel number is required"}
+        
+        # Validate channel number (can be integer or decimal like 1.1)
+        try:
+            # Try to convert to float to validate format
+            float(channel_number)
+        except ValueError:
+            return {"success": False, "message": f"❌ Invalid channel number: {channel_number}. Use numbers like 1, 1.1, or 999"}
         
         # Check if channel number already exists
         existing_channel = Channel.objects.filter(channel_number=channel_number).first()
@@ -193,7 +203,16 @@ class Plugin:
         ChannelStream = apps.get_model('dispatcharr_channels', 'ChannelStream')
         ChannelGroup = apps.get_model('dispatcharr_channels', 'ChannelGroup')
         
-        channel_number = int(settings.get("channel_number", 999))
+        channel_number = settings.get("channel_number", "999").strip()
+        
+        if not channel_number:
+            return {"success": False, "message": "❌ Channel number is required"}
+        
+        # Validate channel number format
+        try:
+            float(channel_number)
+        except ValueError:
+            return {"success": False, "message": f"❌ Invalid channel number: {channel_number}"}
         
         channel = Channel.objects.filter(channel_number=channel_number).first()
         
@@ -275,7 +294,16 @@ class Plugin:
         Channel = apps.get_model('dispatcharr_channels', 'Channel')
         ChannelStream = apps.get_model('dispatcharr_channels', 'ChannelStream')
         
-        channel_number = int(settings.get("channel_number", 999))
+        channel_number = settings.get("channel_number", "999").strip()
+        
+        if not channel_number:
+            return {"success": False, "message": "❌ Channel number is required"}
+        
+        # Validate channel number format
+        try:
+            float(channel_number)
+        except ValueError:
+            return {"success": False, "message": f"❌ Invalid channel number: {channel_number}"}
         
         channel = Channel.objects.filter(channel_number=channel_number).first()
         
@@ -327,9 +355,9 @@ class Plugin:
             for group in security_groups:
                 cameras.extend(group.channels.all())
             
-            # Remove duplicates and sort
+            # Remove duplicates and sort by channel number (handle decimals)
             cameras = list(set(cameras))
-            cameras.sort(key=lambda x: x.channel_number)
+            cameras.sort(key=lambda x: float(x.channel_number) if x.channel_number else 0)
             
             if not cameras:
                 return {
