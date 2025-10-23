@@ -14,8 +14,8 @@ Add RTSP, HTTP, and MJPEG security camera feeds as channels in Dispatcharr.
 
 ## Installation
 
-1. Copy `plugin_final.py` to your Dispatcharr plugins directory
-2. Restart Dispatcharr
+1. Upload the Zip file through Dispatcharr plugins
+2. Restart Dispatcharr container
 3. The plugin will appear in your plugins list as "Security Camera"
 
 ## Usage
